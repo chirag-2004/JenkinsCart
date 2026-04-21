@@ -12,7 +12,7 @@ pipeline {
     stages {
 
         // -----------------------------
-        // CLONE REPO
+        // CHECKOUT
         // -----------------------------
         stage('Checkout') {
             steps {
@@ -22,19 +22,19 @@ pipeline {
         }
 
         // -----------------------------
-        // BUILD ALL SERVICES (MAVEN)
+        // BUILD SERVICES (FIXED PATHS)
         // -----------------------------
         stage('Build Services') {
             steps {
                 bat '''
-                mvn clean package -DskipTests -f Ecomm_EurekaServer/pom.xml
-                mvn clean package -DskipTests -f Ecomm_ConfigServer/pom.xml
+                mvn clean package -DskipTests -f EurekaServer/pom.xml
+                mvn clean package -DskipTests -f ConfigServer/pom.xml
                 mvn clean package -DskipTests -f APIGateway/pom.xml
 
                 mvn clean package -DskipTests -f Product/pom.xml
                 mvn clean package -DskipTests -f ProductCatalog/pom.xml
-                mvn clean package -DskipTests -f ProductInventory/pom.xml
-                mvn clean package -DskipTests -f ProductPrice/pom.xml
+                mvn clean package -DskipTests -f Inventory/pom.xml
+                mvn clean package -DskipTests -f Pricing/pom.xml
 
                 mvn clean package -DskipTests -f Cart/pom.xml
                 mvn clean package -DskipTests -f Recommendation/pom.xml
@@ -43,20 +43,19 @@ pipeline {
         }
 
         // -----------------------------
-        // BUILD DOCKER IMAGES
-        // (Names MUST match docker-stack.yml)
+        // DOCKER BUILD (FIXED PATHS)
         // -----------------------------
         stage('Docker Build') {
             steps {
                 bat '''
-                docker build -t eureka-service ./Ecomm_EurekaServer
-                docker build -t config-service ./Ecomm_ConfigServer
+                docker build -t eureka-service ./EurekaServer
+                docker build -t config-service ./ConfigServer
                 docker build -t gateway-service ./APIGateway
 
                 docker build -t product-service ./Product
                 docker build -t catalog-service ./ProductCatalog
-                docker build -t inventory-service ./ProductInventory
-                docker build -t pricing-service ./ProductPrice
+                docker build -t inventory-service ./Inventory
+                docker build -t pricing-service ./Pricing
 
                 docker build -t cart-service ./Cart
                 docker build -t recommendation-service ./Recommendation
@@ -65,7 +64,7 @@ pipeline {
         }
 
         // -----------------------------
-        // INIT SWARM (SAFE)
+        // INIT SWARM
         // -----------------------------
         stage('Init Swarm') {
             steps {
@@ -81,7 +80,7 @@ pipeline {
         stage('Remove Old Stack') {
             steps {
                 bat '''
-                docker stack rm %STACK_NAME% || echo No stack running
+                docker stack rm %STACK_NAME% || echo No existing stack
                 timeout /t 10
                 '''
             }
@@ -113,10 +112,10 @@ pipeline {
 
     post {
         success {
-            echo "🚀 Ecommerce Cart Microservices deployed successfully on Docker Swarm!"
+            echo "🚀 Deployment successful on Docker Swarm!"
         }
         failure {
-            echo "❌ Pipeline failed — check Jenkins logs"
+            echo "❌ Pipeline failed — check logs"
         }
     }
 }
