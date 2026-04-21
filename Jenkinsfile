@@ -3,6 +3,7 @@ pipeline {
 
     tools {
         maven 'Maven'
+        jdk 'JDK17'
     }
 
     environment {
@@ -13,7 +14,7 @@ pipeline {
     stages {
 
         // -----------------------------
-        // CHECKOUT
+        // CHECKOUT CODE
         // -----------------------------
         stage('Checkout') {
             steps {
@@ -23,7 +24,7 @@ pipeline {
         }
 
         // -----------------------------
-        // BUILD SERVICES
+        // BUILD ALL MICROSERVICES
         // -----------------------------
         stage('Build Services') {
             steps {
@@ -44,9 +45,9 @@ pipeline {
         }
 
         // -----------------------------
-        // DOCKER BUILD + TAG
+        // BUILD DOCKER IMAGES
         // -----------------------------
-        stage('Docker Build & Tag') {
+        stage('Docker Build') {
             steps {
                 bat '''
                 docker build -t %DOCKER_USER%/eureka-service ./EurekaServer
@@ -65,24 +66,25 @@ pipeline {
         }
 
         // -----------------------------
-        // DOCKER LOGIN
+        // DOCKER LOGIN (FIXED)
         // -----------------------------
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'USERNAME',
-                    passwordVariable: 'PASSWORD'
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
                 )]) {
                     bat '''
-                    echo %PASSWORD% | docker login -u %USERNAME% --password-stdin
+                    docker logout
+                    docker login -u %USER% -p %PASS%
                     '''
                 }
             }
         }
 
         // -----------------------------
-        // PUSH TO DOCKER HUB
+        // PUSH IMAGES TO DOCKER HUB
         // -----------------------------
         stage('Push Images') {
             steps {
@@ -103,7 +105,7 @@ pipeline {
         }
 
         // -----------------------------
-        // INIT SWARM
+        // INIT SWARM (SAFE)
         // -----------------------------
         stage('Init Swarm') {
             steps {
@@ -143,7 +145,7 @@ pipeline {
         }
 
         // -----------------------------
-        // VERIFY
+        // VERIFY DEPLOYMENT
         // -----------------------------
         stage('Verify Deployment') {
             steps {
@@ -153,14 +155,26 @@ pipeline {
                 '''
             }
         }
+
+        // -----------------------------
+        // CHECK LOGS (OPTIONAL)
+        // -----------------------------
+        stage('Check Logs') {
+            steps {
+                bat '''
+                docker service logs %STACK_NAME%_gateway --tail 20
+                '''
+                bat 'exit /b 0'
+            }
+        }
     }
 
     post {
         success {
-            echo "🚀 Deployment + Docker Hub push successful!"
+            echo "🚀 Full CI/CD + Docker Hub + Swarm deployment successful!"
         }
         failure {
-            echo "❌ Pipeline failed — check logs"
+            echo "❌ Pipeline failed — check logs carefully"
         }
     }
 }
