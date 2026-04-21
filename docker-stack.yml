@@ -6,7 +6,7 @@ services:
   # EUREKA SERVER
   # -----------------------------
   eureka:
-    image: eureka-service
+    image: chirag1804/eureka-service:latest
     ports:
       - "8761:8761"
     networks:
@@ -20,7 +20,7 @@ services:
   # CONFIG SERVER
   # -----------------------------
   config:
-    image: config-service
+    image: chirag1804/config-service:latest
     ports:
       - "8888:8888"
     networks:
@@ -52,7 +52,7 @@ services:
   # API GATEWAY
   # -----------------------------
   gateway:
-    image: gateway-service
+    image: chirag1804/gateway-service:latest
     ports:
       - "8088:8088"
     networks:
@@ -66,7 +66,7 @@ services:
   # PRODUCT SERVICE
   # -----------------------------
   product:
-    image: product-service
+    image: chirag1804/product-service:latest
     networks:
       - micro-net
     deploy:
@@ -76,7 +76,7 @@ services:
   # CART SERVICE
   # -----------------------------
   cart:
-    image: cart-service
+    image: chirag1804/cart-service:latest
     networks:
       - micro-net
     deploy:
@@ -86,7 +86,7 @@ services:
   # INVENTORY SERVICE
   # -----------------------------
   inventory:
-    image: inventory-service
+    image: chirag1804/inventory-service:latest
     networks:
       - micro-net
     deploy:
@@ -96,7 +96,7 @@ services:
   # PRICING SERVICE
   # -----------------------------
   pricing:
-    image: pricing-service
+    image: chirag1804/pricing-service:latest
     networks:
       - micro-net
     deploy:
@@ -106,7 +106,7 @@ services:
   # PRODUCT CATALOG SERVICE
   # -----------------------------
   catalog:
-    image: catalog-service
+    image: chirag1804/catalog-service:latest
     networks:
       - micro-net
     deploy:
@@ -116,7 +116,7 @@ services:
   # RECOMMENDATION SERVICE
   # -----------------------------
   recommendation:
-    image: recommendation-service
+    image: chirag1804/recommendation-service:latest
     networks:
       - micro-net
     deploy:
