@@ -1,0 +1,136 @@
+version: "3.8"
+
+services:
+
+  # -----------------------------
+  # EUREKA SERVER
+  # -----------------------------
+  eureka:
+    image: eureka-service
+    ports:
+      - "8761:8761"
+    networks:
+      - micro-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # -----------------------------
+  # CONFIG SERVER
+  # -----------------------------
+  config:
+    image: config-service
+    ports:
+      - "8888:8888"
+    networks:
+      - micro-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # -----------------------------
+  # POSTGRES DATABASE
+  # -----------------------------
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: Microservices
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: TIGER
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - micro-net
+    deploy:
+      replicas: 1
+
+  # -----------------------------
+  # API GATEWAY
+  # -----------------------------
+  gateway:
+    image: gateway-service
+    ports:
+      - "8088:8088"
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  # -----------------------------
+  # PRODUCT SERVICE
+  # -----------------------------
+  product:
+    image: product-service
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+
+  # -----------------------------
+  # CART SERVICE
+  # -----------------------------
+  cart:
+    image: cart-service
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+
+  # -----------------------------
+  # INVENTORY SERVICE
+  # -----------------------------
+  inventory:
+    image: inventory-service
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+
+  # -----------------------------
+  # PRICING SERVICE
+  # -----------------------------
+  pricing:
+    image: pricing-service
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+
+  # -----------------------------
+  # PRODUCT CATALOG SERVICE
+  # -----------------------------
+  catalog:
+    image: catalog-service
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+
+  # -----------------------------
+  # RECOMMENDATION SERVICE
+  # -----------------------------
+  recommendation:
+    image: recommendation-service
+    networks:
+      - micro-net
+    deploy:
+      replicas: 2
+
+# -----------------------------
+# NETWORK
+# -----------------------------
+networks:
+  micro-net:
+    driver: overlay
+
+# -----------------------------
+# VOLUME
+# -----------------------------
+volumes:
+  pgdata:
