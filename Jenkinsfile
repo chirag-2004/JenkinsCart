@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         STACK_NAME = "ecommerce"
+        DOCKER_USER = "chirag1804"
     }
 
     stages {
@@ -43,28 +44,66 @@ pipeline {
         }
 
         // -----------------------------
-        // DOCKER BUILD
+        // DOCKER BUILD + TAG
         // -----------------------------
-        stage('Docker Build') {
+        stage('Docker Build & Tag') {
             steps {
                 bat '''
-                docker build -t eureka-service ./EurekaServer
-                docker build -t config-service ./ConfigServer
-                docker build -t gateway-service ./APIGateway
+                docker build -t %DOCKER_USER%/eureka-service ./EurekaServer
+                docker build -t %DOCKER_USER%/config-service ./ConfigServer
+                docker build -t %DOCKER_USER%/gateway-service ./APIGateway
 
-                docker build -t product-service ./Product
-                docker build -t catalog-service ./ProductCatalog
-                docker build -t inventory-service ./Inventory
-                docker build -t pricing-service ./Pricing
+                docker build -t %DOCKER_USER%/product-service ./Product
+                docker build -t %DOCKER_USER%/catalog-service ./ProductCatalog
+                docker build -t %DOCKER_USER%/inventory-service ./Inventory
+                docker build -t %DOCKER_USER%/pricing-service ./Pricing
 
-                docker build -t cart-service ./Cart
-                docker build -t recommendation-service ./Recommendation
+                docker build -t %DOCKER_USER%/cart-service ./Cart
+                docker build -t %DOCKER_USER%/recommendation-service ./Recommendation
                 '''
             }
         }
 
         // -----------------------------
-        // INIT SWARM (FIXED)
+        // DOCKER LOGIN
+        // -----------------------------
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'USERNAME',
+                    passwordVariable: 'PASSWORD'
+                )]) {
+                    bat '''
+                    echo %PASSWORD% | docker login -u %USERNAME% --password-stdin
+                    '''
+                }
+            }
+        }
+
+        // -----------------------------
+        // PUSH TO DOCKER HUB
+        // -----------------------------
+        stage('Push Images') {
+            steps {
+                bat '''
+                docker push %DOCKER_USER%/eureka-service
+                docker push %DOCKER_USER%/config-service
+                docker push %DOCKER_USER%/gateway-service
+
+                docker push %DOCKER_USER%/product-service
+                docker push %DOCKER_USER%/catalog-service
+                docker push %DOCKER_USER%/inventory-service
+                docker push %DOCKER_USER%/pricing-service
+
+                docker push %DOCKER_USER%/cart-service
+                docker push %DOCKER_USER%/recommendation-service
+                '''
+            }
+        }
+
+        // -----------------------------
+        // INIT SWARM
         // -----------------------------
         stage('Init Swarm') {
             steps {
@@ -80,7 +119,7 @@ pipeline {
         }
 
         // -----------------------------
-        // REMOVE OLD STACK (SAFE)
+        // REMOVE OLD STACK
         // -----------------------------
         stage('Remove Old Stack') {
             steps {
@@ -104,7 +143,7 @@ pipeline {
         }
 
         // -----------------------------
-        // VERIFY DEPLOYMENT
+        // VERIFY
         // -----------------------------
         stage('Verify Deployment') {
             steps {
@@ -114,27 +153,14 @@ pipeline {
                 '''
             }
         }
-
-        // -----------------------------
-        // OPTIONAL: DEBUG LOGS
-        // -----------------------------
-        stage('Check Logs (Optional)') {
-            steps {
-                bat '''
-                docker service logs %STACK_NAME%_gateway --tail 20
-                '''
-                // prevent failure if logs not available
-                bat 'exit /b 0'
-            }
-        }
     }
 
     post {
         success {
-            echo "🚀 Ecommerce Microservices deployed successfully on Docker Swarm!"
+            echo "🚀 Deployment + Docker Hub push successful!"
         }
         failure {
-            echo "❌ Pipeline failed — check Jenkins logs carefully"
+            echo "❌ Pipeline failed — check logs"
         }
     }
 }
