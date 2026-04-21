@@ -22,7 +22,7 @@ pipeline {
         }
 
         // -----------------------------
-        // BUILD SERVICES (FIXED PATHS)
+        // BUILD SERVICES
         // -----------------------------
         stage('Build Services') {
             steps {
@@ -43,7 +43,7 @@ pipeline {
         }
 
         // -----------------------------
-        // DOCKER BUILD (FIXED PATHS)
+        // DOCKER BUILD
         // -----------------------------
         stage('Docker Build') {
             steps {
@@ -64,24 +64,30 @@ pipeline {
         }
 
         // -----------------------------
-        // INIT SWARM
+        // INIT SWARM (FIXED)
         // -----------------------------
         stage('Init Swarm') {
             steps {
                 bat '''
-                docker swarm init || echo Swarm already initialized
+                docker info | findstr "Swarm: active"
+                IF %ERRORLEVEL% EQU 0 (
+                    echo Swarm already initialized
+                ) ELSE (
+                    docker swarm init
+                )
                 '''
             }
         }
 
         // -----------------------------
-        // REMOVE OLD STACK
+        // REMOVE OLD STACK (SAFE)
         // -----------------------------
         stage('Remove Old Stack') {
             steps {
                 bat '''
-                docker stack rm %STACK_NAME% || echo No existing stack
+                docker stack rm %STACK_NAME%
                 timeout /t 10
+                exit /b 0
                 '''
             }
         }
@@ -98,7 +104,7 @@ pipeline {
         }
 
         // -----------------------------
-        // VERIFY
+        // VERIFY DEPLOYMENT
         // -----------------------------
         stage('Verify Deployment') {
             steps {
@@ -108,14 +114,27 @@ pipeline {
                 '''
             }
         }
+
+        // -----------------------------
+        // OPTIONAL: DEBUG LOGS
+        // -----------------------------
+        stage('Check Logs (Optional)') {
+            steps {
+                bat '''
+                docker service logs %STACK_NAME%_gateway --tail 20
+                '''
+                // prevent failure if logs not available
+                bat 'exit /b 0'
+            }
+        }
     }
 
     post {
         success {
-            echo "🚀 Deployment successful on Docker Swarm!"
+            echo "🚀 Ecommerce Microservices deployed successfully on Docker Swarm!"
         }
         failure {
-            echo "❌ Pipeline failed — check logs"
+            echo "❌ Pipeline failed — check Jenkins logs carefully"
         }
     }
 }
